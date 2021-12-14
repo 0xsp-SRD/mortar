@@ -6,7 +6,7 @@ Mortar is able to bypass modern anti-virus products and advanced XDR solutions a
 * Kaspersky
 * ESET 
 * Malewarebytes 
-* Macfee 
+* Mcafee 
 * Cortex XDR 
 * Windows defender 
 * Cylance
