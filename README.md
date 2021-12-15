@@ -41,8 +41,20 @@ deliver.exe -d -c sekurlasa::logonpasswords -f mimikatz.enc
 deliver.exe -d -f cobalt.enc 
 
 ```
-# Compiling 
+# Compiling the Loader (windows only)
 the project has been coded using FPC(Free Pascal), the compiling procedures are straightforward by downloading and installing Lazarus IDE (https://www.lazarus-ide.org/index.php?page=downloads) and navigate into file > open  -> Run -> build 
+
+
+# Compiling Encryptor(Linux/BSD/Arm/MacOS//windows)
+either by downloading and installing Lazarus-IDE from the official site(https://www.lazarus-ide.org/index.php?page=downloads)
+
+```
+#Debian & Ubuntu 
+
+apt install fpc 
+apt install lazarus-ide 
+
+```
 
 
 
