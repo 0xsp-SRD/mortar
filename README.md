@@ -10,6 +10,11 @@ Mortar is able to bypass modern anti-virus products and advanced XDR solutions a
 * Cortex XDR 
 * Windows defender 
 * Cylance
+
+detailed research : https://0xsp.com/security%20research%20&%20development%20(SRD)/defeat-the-castle-bypass-av-advanced-xdr-solutions
+
+CrestCon Asia 2021 talk : https://www.youtube.com/watch?v=H7EMBz7GLMk
+
 # Usage 
 
 ## Encryptor 
