@@ -60,6 +60,9 @@ apt install fpc
 apt install lazarus-ide 
 
 ```
+# Support the research 
+if you think you have benefited from this open-source project and want more updates in the future, please mind time and efforts by making a donation
+https://donorbox.org/support-0xsp
 
 
 
