@@ -1,50 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectSession>
-    <PathDelim Value="\"/>
-    <Version Value="12"/>
+    <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units>
-      <Unit>
+    <Units Count="1">
+      <Unit0>
         <Filename Value="encryptor.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="58"/>
-        <CursorPos X="30" Y="6"/>
+        <CursorPos X="20" Y="3"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="C:\fpcupdeluxe\fpcsrc\packages\fcl-base\src\custapp.pp"/>
-        <UnitName Value="CustApp"/>
-        <EditorIndex Value="1"/>
-        <TopLine Value="69"/>
-        <CursorPos X="14" Y="71"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
-      </Unit>
+      </Unit0>
     </Units>
-    <JumpHistory HistoryIndex="3">
-      <Position>
-        <Filename Value="encryptor.lpr"/>
-        <Caret Line="118" Column="31" TopLine="105"/>
-      </Position>
-      <Position>
-        <Filename Value="encryptor.lpr"/>
-        <Caret Line="9" Column="37"/>
-      </Position>
-      <Position>
-        <Filename Value="encryptor.lpr"/>
-        <Caret Line="77" Column="49" TopLine="65"/>
-      </Position>
-      <Position>
-        <Filename Value="encryptor.lpr"/>
-        <Caret Line="117" Column="18" TopLine="103"/>
-      </Position>
-    </JumpHistory>
+    <JumpHistory HistoryIndex="-1"/>
     <RunParams>
       <FormatVersion Value="2"/>
-      <Modes ActiveMode=""/>
+      <Modes Count="0" ActiveMode=""/>
     </RunParams>
   </ProjectSession>
 </CONFIG>

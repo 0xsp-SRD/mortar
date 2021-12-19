@@ -107,7 +107,7 @@ var
   begin
   vStrm := TFileStream.Create(output,fmCreate);
 
-  key :='test123zux@321';  // encryption + decryption key
+  key :='zuxiamhere';  // encryption + decryption key
 
   s1 := Tstringstream.Create('');
   writeln('[+] Encrypting the binary ...');
