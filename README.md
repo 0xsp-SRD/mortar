@@ -20,7 +20,7 @@ CrestCon Asia 2021 talk : https://www.youtube.com/watch?v=H7EMBz7GLMk
 ## Encryptor 
 
 ```
-root@kali>./encryptor -f mimikatz.exe -o bin.tmp 
+root@kali>./encryptor -f mimikatz.exe -o bin.enc 
 
 ```
 
