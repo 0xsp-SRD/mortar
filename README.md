@@ -3,15 +3,15 @@
 red teaming evasion technique to defeat and divert detection and prevention of security products.Mortar Loader performs encryption and decryption of selected binary inside the memory streams and execute it directly with out writing any malicious indicator into the hard-drive. 
 Mortar is able to bypass modern anti-virus products and advanced XDR solutions and it has been tested and confirmed bypass for the following: 
 
-* Kaspersky
-* ESET 
-* Malewarebytes 
-* Mcafee 
-* Cortex XDR 
-* Windows defender 
-* Cylance
+* Kaspersky :heavy_check_mark:
+* ESET :heavy_check_mark:
+* Malewarebytes :heavy_check_mark:
+* Mcafee :heavy_check_mark:
+* Cortex XDR :heavy_check_mark:
+* Windows defender :heavy_check_mark:
+* Cylance:heavy_check_mark:
 
-detailed research : https://0xsp.com/security%20research%20&%20development%20(SRD)/defeat-the-castle-bypass-av-advanced-xdr-solutions
+detailed research and techniques : https://0xsp.com/security%20research%20&%20development%20(SRD)/defeat-the-castle-bypass-av-advanced-xdr-solutions
 
 CrestCon Asia 2021 talk : https://www.youtube.com/watch?v=H7EMBz7GLMk
 
