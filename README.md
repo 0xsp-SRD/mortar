@@ -12,7 +12,7 @@ Mortar is able to bypass modern anti-virus products and advanced XDR solutions a
 * Cylance:heavy_check_mark:
 * TrendMicro :heavy_check_mark:
 * Bitdefender :heavy_check_mark:
-* Norton Symantec
+* Norton Symantec :heavy_check_mark:
 
 detailed research and techniques : https://0xsp.com/security%20research%20&%20development%20(SRD)/defeat-the-castle-bypass-av-advanced-xdr-solutions
 
