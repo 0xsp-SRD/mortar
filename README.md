@@ -7,7 +7,6 @@ Mortar is able to bypass modern anti-virus products and advanced XDR solutions a
 * ESET :heavy_check_mark:
 * Malewarebytes :heavy_check_mark:
 * Mcafee :heavy_check_mark:
-* Cortex XDR :heavy_check_mark:
 * Windows defender :heavy_check_mark:
 * Cylance:heavy_check_mark:
 * TrendMicro :heavy_check_mark:
