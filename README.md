@@ -69,6 +69,10 @@ apt install lazarus-ide
 if you think you have benefited from this open-source project and want more updates in the future, please mind time and efforts by making a donation
 https://donorbox.org/support-0xsp
 
+# sponsor ?
+- you show continues appreciation of my work
+- you will get early access into private repos and get support for any raise issue
+
 
 
 
