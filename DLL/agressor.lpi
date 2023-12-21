@@ -100,23 +100,16 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="4">
+    <Units Count="2">
       <Unit0>
         <Filename Value="agressor.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="..\Lib\runner.pas"/>
+        <Filename Value="..\Lib\core.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Core"/>
       </Unit1>
-      <Unit2>
-        <Filename Value="..\Lib\shell_loader.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit2>
-      <Unit3>
-        <Filename Value="..\Lib\syscalls.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit3>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
