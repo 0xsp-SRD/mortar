@@ -156,7 +156,7 @@ begin
 end;
 
 
-function Debugable_proc(lpProcessName: LPCSTR; var dwProcessId: DWORD; var threadId:DWORD;
+function Debugable_proc(lpProcessName: LPCSTR; var dwProcessId: DWORD; var threadId:DWORD; //thanks to MalDEVAcademy
   var hProcess, hThread: THandle): Boolean; stdcall;
 var
   lpPath, WnDr: array[0..MAX_PATH * 2 - 1] of Char;
@@ -173,17 +173,13 @@ begin
 
   if jwawindows.GetEnvironmentVariable('WINDIR', WnDr, MAX_PATH) = 0 then
   begin
-    WriteLn('GetEnvironmentVariable Failed With Error: ', GetLastError);
+    //WriteLn('GetEnvironmentVariable Failed With Error: ', GetLastError);
     Result := False;
     Exit;
   end;
 
   StrFmt(lpPath, '%s\System32\%s', [WnDr, lpProcessName]);
-//  WriteLn('Running: "', lpPath, '" ... ');
 
-     // StrFmt(lpPath, 'C:\Windows\System32\', [lpProcessName]);
-
-    // CreateProcess(nil, lpProcessName, nil, nil, False, DEBUG_PROCESS, nil, nil, @Si, @Pi)
 
   if not CreateProcess(nil, lpPath, nil, nil, False, DEBUG_PROCESS, nil, nil, Si, Pi) then
   begin
