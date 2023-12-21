@@ -422,9 +422,9 @@ Main;
 //************************************//
 
 begin
-   if isEmulated = true  then
-    exit
-    else
+  // if isEmulated = true  then
+ //   exit
+ //   else
 ReadEnvironmentVar;
 
 end.
